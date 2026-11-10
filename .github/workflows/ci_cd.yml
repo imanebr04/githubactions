@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+# Le workflow s’exécute sur les pushs vers main et les PR qui ciblent main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+      - name: Lancer les tests
+        run: pytest -q
+
+  build:
+    # GitHub Actions ignore ce job si les tests échouent.
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+      - name: Construire l’image Docker
+        run: docker build -t "myapp:${{ github.sha }}" .
+      - name: Confirmer le build
+        run: echo "Image construite avec le tag myapp:${GITHUB_SHA}"
